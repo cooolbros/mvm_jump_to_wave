@@ -33,25 +33,35 @@ public Action Command_Wave(int client, int args)
 
 	char tf_mvm_popfile_output[PLATFORM_MAX_PATH];
 	ServerCommandEx(tf_mvm_popfile_output, sizeof(tf_mvm_popfile_output), "tf_mvm_popfile");
+	
+	char popfilePath[PLATFORM_MAX_PATH];
+	strcopy(popfilePath, sizeof(popfilePath), tf_mvm_popfile_output);
+	
+	// for KeyValues file
 	ReplaceString(tf_mvm_popfile_output, sizeof(tf_mvm_popfile_output), "Current popfile is: ", "", false);
 	ReplaceString(tf_mvm_popfile_output, sizeof(tf_mvm_popfile_output), "\n", "", false);
+	strcopy(popfilePath, sizeof(popfilePath), tf_mvm_popfile_output);
+	
+	//for tf_mvm_popfile
+	ReplaceString(tf_mvm_popfile_output, sizeof(tf_mvm_popfile_output), "scripts/population/", "", false);
+	ReplaceString(tf_mvm_popfile_output, sizeof(tf_mvm_popfile_output), ".pop", "", false);
 
-	char arg[PLATFORM_MAX_PATH];
+	char arg[PLATFORM_MAX_PATH];    
 	GetCmdArg(1, arg, sizeof(arg));
 	int wave = StringToInt(arg);
-
+	ServerCommand("tf_mvm_popfile %s", tf_mvm_popfile_output);
 	ServerCommand("tf_mvm_jump_to_wave %d", wave);
 
 	KeyValues kv = new KeyValues("WaveSchedule");
-	if (!kv.ImportFromFile(tf_mvm_popfile_output))
+	if (!kv.ImportFromFile(popfilePath))
 	{
-		ReplyToCommand(client, "File Error: %s", tf_mvm_popfile_output);
+		ReplyToCommand(client, "File Error: %s", popfilePath);
 		return Plugin_Handled;
 	}
 
 	if (!kv.GotoFirstSubKey(false))
 	{
-		ReplyToCommand(client, "KeyValues Error: %s", tf_mvm_popfile_output);
+		ReplyToCommand(client, "KeyValues Error: %s", popfilePath);
 		return Plugin_Handled;
 	}
 
@@ -75,10 +85,10 @@ public Action Command_Wave(int client, int args)
 
 			do
 			{
-				char key[PLATFORM_MAX_PATH];
-				kv.GetSectionName(key, sizeof(key));
+				char waveKey[PLATFORM_MAX_PATH];
+				kv.GetSectionName(waveKey, sizeof(waveKey));
 
-				if (StrEqual(key, "WaveSpawn", false))
+				if (StrEqual(waveKey, "WaveSpawn", false))
 				{
 					int totalCurrency = kv.GetNum("TotalCurrency");
 					if (totalCurrency > 0)
@@ -105,7 +115,7 @@ public Action Command_Wave(int client, int args)
 	return Plugin_Handled;
 }
 
-void SetCurrency(Handle timer, int currency)
+public Action SetCurrency(Handle timer, int currency) // to remove the error when compiling
 {
 	for (int i = 1; i <= MaxClients; i++)
 	{
@@ -114,4 +124,5 @@ void SetCurrency(Handle timer, int currency)
 			SetEntProp(i, Prop_Send, "m_nCurrency", currency);
 		}
 	}
+	return Plugin_Handled;
 }
